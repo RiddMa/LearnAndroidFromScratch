@@ -5,72 +5,80 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
-import android.widget.SeekBar;
 
 import androidx.annotation.Nullable;
-
-import java.util.Timer;
 
 public class MyMusicService extends Service {
     public MyMusicService() {
     }
 
     private MediaPlayer mediaPlayer;
-    private int musicDuration = 1;
-    private int musicProgress = 0;
 
     /**
      * 更新进度的回调接口
      */
     private OnProgressListener onProgressListener;
 
+    /**
+     * 注册回调接口的方法，供外部调用
+     * @param onProgressListener
+     */
     public void setOnProgressListener(OnProgressListener onProgressListener) {
         this.onProgressListener = onProgressListener;
     }
 
-    public int getProgress() {
+    public int getMusicProgress() {
         if (mediaPlayer != null) {
-            musicProgress = mediaPlayer.getCurrentPosition();
+            return mediaPlayer.getCurrentPosition();
+        } else {
+            return 0;
         }
-        return musicProgress;
     }
-
 
     public int getMusicDuration() {
         if (mediaPlayer != null) {
-            musicDuration = mediaPlayer.getDuration();
+            return mediaPlayer.getDuration();
+        } else {
+            return 0;
         }
-        return musicDuration;
     }
 
+    /**
+     * 新建线程检测音乐播放状态
+     */
     public void checkProgress() {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                while (mediaPlayer != null) {
-                    if (onProgressListener != null) {
-                        onProgressListener.onProgress(getProgress(), getMusicDuration());
-//                        System.out.println("service:" + musicProgress + ", " + musicDuration);
+                while (onProgressListener != null) {
+                    // 通过接口通知调用方进度
+                    onProgressListener.onProgress(getMusicProgress(), getMusicDuration());
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                }
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
             }
         }).start();
     }
 
+    /**
+     * 控制播放器
+     *
+     * @param action 动作字符串
+     */
     public void controlPlayer(String action) {
         switch (action) {
             case "play":
                 if (mediaPlayer == null) {
+                    // NEVER GONNA GIVE YOU UP
                     mediaPlayer = MediaPlayer.create(this, R.raw.rickroll);
+                    // NEVER GONNA GIVE YOU UP // NEVER GONNA GIVE YOU UP // NEVER GONNA GIVE YOU UP
+                    mediaPlayer.setLooping(true);
                 }
                 mediaPlayer.start();
                 checkProgress();
-                System.out.println("Player started.");
                 break;
             case "stop":
                 if (mediaPlayer != null) {
@@ -85,57 +93,39 @@ public class MyMusicService extends Service {
                     mediaPlayer.pause();
                 }
                 break;
-            case "getInfo":
-                if (mediaPlayer != null) {
-                    mediaPlayer.getDuration();
-                }
-                break;
         }
     }
 
-//    @Override
-//    public int onStartCommand(Intent intent, int flags, int startId) {
-//
-//        //获取意图传递的信息
-//        String action = intent.getStringExtra("action");
-//
-//        switch (action) {
-//            case "play":
-//                if (mediaPlayer == null) {
-//                    mediaPlayer = MediaPlayer.create(this, R.raw.newyear);
-//                }
-//                mediaPlayer.start();
-//                System.out.println("Player started.");
-//                break;
-//            case "stop":
-//                if (mediaPlayer != null) {
-//                    mediaPlayer.stop();
-//                    mediaPlayer.reset();
-//                    mediaPlayer.release();
-//                    mediaPlayer = null;
-//                }
-//                break;
-//            case "pause":
-//                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-//                    mediaPlayer.pause();
-//                }
-//                break;
-////            case "getInfo":
-////                if (mediaPlayer != null) {
-////                    mediaPlayer.getDuration();
-////                }
-////                break;
-//        }
-//        return super.onStartCommand(intent, flags, startId);
-//    }
+    /**
+     * 控制音乐播放进度
+     *
+     * @param mSec 进度
+     */
+    public void controlPlayerSeek(int mSec) {
+        if (mediaPlayer != null) {
+            mediaPlayer.seekTo(mSec);
+        }
+    }
 
     /**
-     * 返回一个Binder对象
+     * 音乐是否在播放？
+     *
+     * @return 音乐是否在播放
+     */
+    public boolean isMyMusicPlaying() {
+        if (mediaPlayer != null) {
+            return mediaPlayer.isPlaying();
+        }
+        return false;
+    }
+
+    /**
+     * @param intent 获取意图
+     * @return 返回 IBinder 对象，当前对象实例
      */
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        System.out.println("Bind.");
         return new MusicBinder();
     }
 

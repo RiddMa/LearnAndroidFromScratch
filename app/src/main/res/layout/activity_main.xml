@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="20dp"
+    android:padding="40dp"
     android:orientation="vertical">
 
     <TextView
@@ -15,6 +15,7 @@
         android:id="@+id/tv_1"/>
 
     <RelativeLayout
+        android:padding="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
@@ -22,25 +23,29 @@
             android:id="@+id/music_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_above="@id/seekBar"
             android:layout_centerHorizontal="true"
-            android:text="aadas" />
+            android:text="Never Gonna Give You Up" />
 
         <SeekBar
             android:id="@+id/seekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"/>
+            android:layout_centerVertical="true"
+            android:layout_marginVertical="10dp"
+             />
 
         <LinearLayout
+            android:layout_marginRight="15dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/seekBar"
             android:layout_alignEnd="@id/seekBar"
-            android:layout_alignRight="@id/seekBar">
+            android:layout_alignRight="@id/seekBar"
+            android:layout_marginEnd="15dp">
 
             <TextView
                 android:id="@+id/music_cur"
+                android:text="00:00"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
 
@@ -52,7 +57,8 @@
             <TextView
                 android:id="@+id/music_length"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                android:layout_height="match_parent"
+                android:text="00:00" />
 
         </LinearLayout>
 
@@ -60,32 +66,39 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="134dp">
 
         <Button
             android:layout_width="0dp"
+            android:layout_marginHorizontal="5dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="播放"
-            android:onClick="play_onclick"/>
+            android:onClick="play_onclick"
+            android:text="播放" />
+
         <Button
             android:layout_width="0dp"
+            android:layout_marginHorizontal="5dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="暂停"
-            android:onClick="pause_onclick"/>
+            android:onClick="pause_onclick"
+            android:text="暂停" />
+
         <Button
             android:layout_width="0dp"
+            android:layout_marginHorizontal="5dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="停止"
-            android:onClick="stop_onclick"/>
+            android:onClick="stop_onclick"
+            android:text="停止" />
+
         <Button
             android:layout_width="0dp"
+            android:layout_marginHorizontal="5dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="退出"
-            android:onClick="exit_onclick"/>
+            android:onClick="exit_onclick"
+            android:text="退出" />
     </LinearLayout>
 
 </LinearLayout>

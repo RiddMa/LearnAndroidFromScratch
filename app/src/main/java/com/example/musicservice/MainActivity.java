@@ -10,18 +10,23 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
+
 public class MainActivity extends AppCompatActivity {
 
-    TextView tv_1;
+    TextView titleInfo;
+    SeekBar seekBar;
+    TextView musicCur;
+    TextView musicLen;
+
     private MyMusicService myMusicService;
-    private int mProgress = 0;
-    private int mDuration = 1;
-    private SeekBar seekBar;
-    private boolean isBound = false;
+    @SuppressLint("SimpleDateFormat")
+    private final SimpleDateFormat msFormat = new SimpleDateFormat("mm:ss");
+    boolean isTouchingBar = false;
+    boolean wasPlaying = false;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -29,64 +34,79 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//      绑定 service
+        //绑定 service
         Intent intent = new Intent(this, MyMusicService.class);
         bindService(intent, conn, Context.BIND_AUTO_CREATE);
 
-
-        seekBar = (SeekBar) findViewById(R.id.seekBar);
-        tv_1 = (TextView) findViewById(R.id.tv_1);
-        tv_1.setText("播放状态0：停止播放。。。");
-
-//        seekBar.setOnClickListener(new OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                myMusicService.getProgress();
-//                listenProgress();
-//            }
-//        });
+        bindViews();
     }
 
-//    public void listenProgress() {
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                mProgress = myMusicService.getProgress();
-//                seekBar.setProgress((mProgress *100)/ mDuration);
-//                System.out.println((mProgress *100)/ mDuration);
-//                try {
-//                    Thread.sleep(1000);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }).start();
-//    }
+    /**
+     * 绑定视图组件
+     */
+    private void bindViews() {
+        titleInfo = (TextView) findViewById(R.id.tv_1);
+        titleInfo.setText("停止播放");
 
+        musicCur = (TextView) findViewById(R.id.music_cur);
+        musicLen = (TextView) findViewById(R.id.music_length);
+
+        seekBar = (SeekBar) findViewById(R.id.seekBar);
+        //实现改变 seekBar 时的操作
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (isTouchingBar) {
+                    myMusicService.controlPlayerSeek(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                isTouchingBar = true;
+                if (myMusicService.isMyMusicPlaying()) {
+                    wasPlaying = true;
+                    myMusicService.controlPlayer("pause");
+                } else {
+                    wasPlaying = false;
+                }
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                isTouchingBar = false;
+                if (wasPlaying) {
+                    myMusicService.controlPlayer("play");
+                }
+            }
+        });
+    }
 
     ServiceConnection conn = new ServiceConnection() {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            isBound = false;
-            System.out.println("ServiceDisconnected");
         }
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             MyMusicService.MusicBinder musicBinder = (MyMusicService.MusicBinder) service;
-            //返回一个MyMusicService对象
+            //获取MyMusicService对象实例
             myMusicService = musicBinder.getService();
-            isBound = true;
-
-            myMusicService.setOnProgressListener(new OnProgressListener() {
-                @Override
-                public void onProgress(int progress,int duration) {
-                    seekBar.setProgress((progress*100)/duration);
-//                    System.out.println("service:" + progress + ", " + duration);
+            myMusicService.setOnProgressListener((progress, duration) -> {
+                if (duration != 0) {
+                    seekBar.setMax(duration);
+                    seekBar.setProgress(progress);
+                } else {
+                    seekBar.setMax(100);
+                    seekBar.setProgress(0);
                 }
+                //post方法通知UI线程更新界面
+                musicLen.post(() -> {
+                    musicCur.setText(msFormat.format(progress));
+                    musicLen.setText(msFormat.format(duration));
+                });
             });
-            System.out.println("ServiceConnected");
         }
     };
 
@@ -94,38 +114,26 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("SetTextI18n")
     public void play_onclick(View view) {
         myMusicService.controlPlayer("play");
-        mDuration = myMusicService.getMusicDuration();
-        System.out.println(mDuration);
-        tv_1.setText("播放状态1：正在播放。。。");
-    }
-
-    @SuppressLint("SetTextI18n")
-    public void stop_onclick(View view) {
-        Intent intent = new Intent(this, MyMusicService.class);
-
-        intent.putExtra("action", "stop");
-
-        startService(intent);
-
-        tv_1.setText("播放状态0：停止播放。。。");
+        titleInfo.setText("正在播放");
     }
 
     @SuppressLint("SetTextI18n")
     public void pause_onclick(View view) {
-        Intent intent = new Intent(this, MyMusicService.class);
+        myMusicService.controlPlayer("pause");
+        titleInfo.setText("暂停播放");
+    }
 
-        intent.putExtra("action", "pause");
-
-        startService(intent);
-
-        tv_1.setText("播放状态2：暂停播放。。。");
+    @SuppressLint("SetTextI18n")
+    public void stop_onclick(View view) {
+        myMusicService.controlPlayer("stop");
+        titleInfo.setText("停止播放");
     }
 
     public void exit_onclick(View view) {
         stop_onclick(view);
+        onDestroy();
         finish();
     }
-
 
     @Override
     protected void onDestroy() {
