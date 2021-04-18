@@ -54,7 +54,7 @@ public class MyMusicService extends Service {
                     // 通过接口通知调用方进度
                     onProgressListener.onProgress(getMusicProgress(), getMusicDuration());
                     try {
-                        Thread.sleep(500);
+                        Thread.sleep(250);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

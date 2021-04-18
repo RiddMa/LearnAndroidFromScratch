@@ -19,6 +19,7 @@ public class MainActivity extends AppCompatActivity {
 
     TextView titleInfo;
     SeekBar seekBar;
+    TextView musicName;
     TextView musicCur;
     TextView musicLen;
 
@@ -48,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         titleInfo = (TextView) findViewById(R.id.tv_1);
         titleInfo.setText("停止播放");
 
+        musicName = (TextView) findViewById(R.id.music_name);
         musicCur = (TextView) findViewById(R.id.music_cur);
         musicLen = (TextView) findViewById(R.id.music_length);
 
@@ -115,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
     public void play_onclick(View view) {
         myMusicService.controlPlayer("play");
         titleInfo.setText("正在播放");
+        musicName.setText("Never Gonna Give You Up - Rick Astley");
+
     }
 
     @SuppressLint("SetTextI18n")
@@ -127,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
     public void stop_onclick(View view) {
         myMusicService.controlPlayer("stop");
         titleInfo.setText("停止播放");
+        musicName.setText("");
     }
 
     public void exit_onclick(View view) {
