@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="40dp"
+    android:layout_marginTop="50dp"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:text="播放状态"
+        android:textSize="20sp"
+        android:gravity="center_horizontal"
+        android:id="@+id/tv_1"/>
+
+    <RelativeLayout
+        android:layout_marginVertical="30dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/music_name"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_centerHorizontal="true"
+            android:textSize="17sp" />
+
+        <SeekBar
+            android:layout_below="@id/music_name"
+            android:id="@+id/seekBar"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:layout_marginVertical="10dp"
+             />
+
+        <LinearLayout
+            android:layout_below="@id/seekBar"
+            android:layout_marginTop="0dp"
+            android:layout_marginRight="15dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@id/seekBar"
+            android:layout_alignRight="@id/seekBar"
+            android:layout_marginEnd="15dp">
+
+            <TextView
+                android:id="@+id/music_cur"
+                android:text="00:00"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="/" />
+
+            <TextView
+                android:id="@+id/music_length"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="00:00" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="134dp">
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_marginHorizontal="5dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="play_onclick"
+            android:text="播放" />
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_marginHorizontal="5dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="pause_onclick"
+            android:text="暂停" />
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_marginHorizontal="5dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="stop_onclick"
+            android:text="停止" />
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_marginHorizontal="5dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="exit_onclick"
+            android:text="退出" />
+    </LinearLayout>
+
+</LinearLayout>
