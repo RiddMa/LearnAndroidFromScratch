@@ -1,6 +1,7 @@
 package com.byted.camp.todolist;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -13,7 +14,6 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,7 +25,6 @@ import com.byted.camp.todolist.db.TodoDbHelper;
 import com.byted.camp.todolist.operation.activity.DatabaseActivity;
 import com.byted.camp.todolist.operation.activity.DebugActivity;
 import com.byted.camp.todolist.operation.activity.SettingActivity;
-import com.byted.camp.todolist.operation.db.FeedReaderContract;
 import com.byted.camp.todolist.ui.NoteListAdapter;
 
 import java.text.ParseException;
@@ -35,16 +34,16 @@ import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MainActivity";
+
     private static final int REQUEST_CODE_ADD = 1002;
 
     private RecyclerView recyclerView;
     private NoteListAdapter notesAdapter;
-
-    TodoDbHelper dbHelper = new TodoDbHelper(getApplicationContext());
+    private TodoDbHelper todoDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        todoDbHelper = new TodoDbHelper(getApplicationContext());
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -74,8 +73,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void updateNote(Note note) {
                 MainActivity.this.updateNode(note);
+//                notesAdapter.refresh(loadNotesFromDatabase());
             }
         });
+        notesAdapter.mContext = getBaseContext();
         recyclerView.setAdapter(notesAdapter);
 
         notesAdapter.refresh(loadNotesFromDatabase());
@@ -83,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        todoDbHelper.close();
         super.onDestroy();
     }
 
@@ -123,67 +125,72 @@ public class MainActivity extends AppCompatActivity {
 
     private List<Note> loadNotesFromDatabase() {
         // TODO 从数据库中查询数据，并转换成 JavaBeans
-        List<Note> noteList = new ArrayList<>();
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        SQLiteDatabase db = todoDbHelper.getReadableDatabase();
 
-        // Define a projection that specifies which columns from the database
-        // you will actually use after this query.
+        List<Note> list = new ArrayList<>();
         String[] projection = {
-                TodoContract.TodoEntry.COLUMN_NAME_ID,
-                TodoContract.TodoEntry.COLUMN_NAME_DATE,
-                TodoContract.TodoEntry.COLUMN_NAME_STATE,
-                TodoContract.TodoEntry.COLUMN_NAME_CONTENT,
+                BaseColumns._ID,
+                TodoContract.FeedEntry.COLUMN_NAME_PRIORITY,
+                TodoContract.FeedEntry.COLUMN_NAME_CONTENT,
+                TodoContract.FeedEntry.COLUMN_NAME_state,
+                TodoContract.FeedEntry.COLUMN_NAME_DATE
         };
 
-        // How you want the results sorted in the resulting Cursor
-        String sortOrder =
-                TodoContract.TodoEntry.COLUMN_NAME_ID + " DESC";
+        SimpleDateFormat sdf = new SimpleDateFormat();// 格式化时间
+        sdf.applyPattern("yyyy-MM-dd HH:mm:ss");// a为am/pm的标记
 
-        Cursor cursor = db.query(
-                TodoContract.TodoEntry.TABLE_NAME,   // The table to query
-                projection,             // The array of columns to return (pass null to get all)
-                null,              // The columns for the WHERE clause
-                null,          // The values for the WHERE clause
-                null,                   // don't group the rows
-                null,                   // don't filter by row groups
-                sortOrder               // The sort order
-        );
-
-        Log.i(TAG, "perfrom query data:");
-        while (cursor.moveToNext()) {
-            long id = cursor.getLong(cursor.getColumnIndexOrThrow(TodoContract.TodoEntry.COLUMN_NAME_ID));
-
-            SimpleDateFormat sdf = new SimpleDateFormat();
-            sdf.applyPattern("yyyy-MM-dd HH:mm:ss");
-            Date date = null;
-            try {
-                date = sdf.parse(cursor.getString(cursor.getColumnIndex(TodoContract.TodoEntry.COLUMN_NAME_DATE)));
-            } catch (ParseException e) {
-                e.printStackTrace();
+        Cursor cursor = db.query(TodoContract.FeedEntry.TABLE_NAME,null,null,null,null,null,null);
+        if(cursor.getCount() > 0){
+            cursor.moveToFirst();
+            while(!cursor.isAfterLast()){
+                long id = Long.parseLong(cursor.getString(cursor.getColumnIndex(TodoContract.FeedEntry._ID)));
+                String date_string = cursor.getString(cursor.getColumnIndex(TodoContract.FeedEntry.COLUMN_NAME_DATE));
+                Date date = null;
+                try {
+                    date = sdf.parse(date_string);
+                } catch (ParseException e) {
+                    date = new Date();
+                }
+                int state_int = cursor.getInt(cursor.getColumnIndex(TodoContract.FeedEntry.COLUMN_NAME_state));
+                State state = State.from(state_int);
+                String content = cursor.getString(cursor.getColumnIndex(TodoContract.FeedEntry.COLUMN_NAME_CONTENT));
+                Integer priority = cursor.getInt(cursor.getColumnIndex(TodoContract.FeedEntry.COLUMN_NAME_PRIORITY));
+                Note note = new Note(id,date,state,content,priority);
+                list.add(note);
+                cursor.moveToNext();
             }
-
-            State state = State.from(cursor.getInt(cursor.getColumnIndex(TodoContract.TodoEntry.COLUMN_NAME_STATE)));
-
-            String content = cursor.getString(cursor.getColumnIndex(TodoContract.TodoEntry.COLUMN_NAME_CONTENT));
-
-            Note tmpNote = new Note(id);
-            tmpNote.setState(state);
-            tmpNote.setDate(date);
-            tmpNote.setContent(content);
-
-            noteList.add(tmpNote);
-
-            Log.i(TAG, noteList.toString());
         }
-        cursor.close();
-        return noteList;
+        return list;
     }
 
     private void deleteNote(Note note) {
         // TODO 删除数据
+        SQLiteDatabase db = todoDbHelper.getWritableDatabase();
+
+        /*String selection = TodoContract.FeedEntry.COLUMN_NAME_CONTENT + " LIKE ?";
+        String[] selectionArgs = {note.getContent()};*/
+        String selection = TodoContract.FeedEntry._ID + " LIKE ?";
+        String[] selectionArgs = {String.valueOf(note.getId())};
+        db.delete(TodoContract.FeedEntry.TABLE_NAME,selection,selectionArgs);
+
+        notesAdapter.refresh(loadNotesFromDatabase());
     }
 
     private void updateNode(Note note) {
+        SQLiteDatabase db = todoDbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(TodoContract.FeedEntry.COLUMN_NAME_state, note.getState().intValue);
+
+        String selection = TodoContract.FeedEntry._ID + " LIKE ?";
+        String[] selectionArgs = {String.valueOf(note.getId())};
+
+        db.update(
+                TodoContract.FeedEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+        notesAdapter.refresh(loadNotesFromDatabase());
         // 更新数据
     }
 
